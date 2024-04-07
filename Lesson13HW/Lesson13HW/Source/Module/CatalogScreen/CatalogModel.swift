@@ -25,7 +25,13 @@ class CatalogModel {
         dataLoader.loadCatalog { [weak self] catalog in
             guard let self = self else { return }
             
-            self.pcItems = catalog?.data ?? []
+            // Mark favorites from saved items
+            self.pcItems = self.markFavoritesFromSavedItems(
+                catalogItems: catalog?.data ?? [],
+                savedFavorites: localStorage.getFavorites()
+            )
+            
+            // Notify the delegate that data has loaded
             self.delegate?.dataDidLoad()
         }
     }
@@ -41,9 +47,11 @@ class CatalogModel {
         
         guard savedItems != favoriteItems else { return }
         
-        let totlaSet: Set<Favorite> = Set(savedItems + favoriteItems)
+        // Deprecated - previous implementation
+        // let totlaSet: Set<Favorite> = Set(savedItems + favoriteItems)
         
-        localStorage.saveFavorites(Array(totlaSet))
+        // Save only the current state of favorites, allowing removal of favorites from the catalog screen
+        localStorage.saveFavorites(favoriteItems)
     }
     
     private func getFavoriteItems() -> [Favorite] {
@@ -56,5 +64,17 @@ class CatalogModel {
                 model: $0.model
             )
         }
+    }
+    
+    private func markFavoritesFromSavedItems(catalogItems: [Pc], savedFavorites: [Favorite]) -> [Pc] {
+        var updatedCatalogItems = catalogItems
+        
+        for (index, item) in updatedCatalogItems.enumerated() {
+            if savedFavorites.contains(where: { $0.id == item.id }) {
+                updatedCatalogItems[index].isFavorite = true
+            }
+        }
+        
+        return updatedCatalogItems
     }
 }

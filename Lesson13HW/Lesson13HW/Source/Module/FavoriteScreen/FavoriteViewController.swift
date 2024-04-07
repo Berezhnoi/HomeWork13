@@ -34,6 +34,11 @@ class FavoriteViewController: UIViewController {
         
         contentView.tableView.dataSource = self
         contentView.tableView.delegate = self
+        
+        contentView.tableView.rowHeight = 85
+        
+        // Register custom cell class with the table view
+        contentView.tableView.register(FavoriteTableViewCell.self, forCellReuseIdentifier: FavoriteTableViewCell.identifier)
     }
 }
 
@@ -54,20 +59,19 @@ extension FavoriteViewController: FavoriteViewDelegate {
 extension FavoriteViewController: UITableViewDataSource {
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return model.favoriteItems.count
+        return model.favoriteItems.count;
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        
-        guard let cell = tableView.dequeueReusableCell(withIdentifier: "FavoriteCell")
-        else {
+        guard let cell = tableView.dequeueReusableCell(withIdentifier: FavoriteTableViewCell.identifier, for: indexPath) as? FavoriteTableViewCell else {
             assertionFailure()
             return UITableViewCell()
-        }
+         }
         
         let item = model.favoriteItems[indexPath.row]
-        cell.textLabel?.text = item.name
-        cell.detailTextLabel?.text = item.model + ", " + item.manufacturer
+        cell.idLabel.text = "Product code: \(item.id)"
+        cell.nameLabel.text = item.name
+        cell.manufacturerModelLabel.text = "\(item.manufacturer), \(item.model)"
         
         return cell
     }
@@ -75,5 +79,16 @@ extension FavoriteViewController: UITableViewDataSource {
 
 // MARK: - UITableViewDelegate
 extension FavoriteViewController: UITableViewDelegate {
-    
+    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+        if editingStyle == .delete {
+            // Remove the item from the model
+            model.removeFromFavorite(at: indexPath.row)
+            
+            // Update the table view
+            tableView.deleteRows(at: [indexPath], with: .fade)
+            
+            // Save changes to local storage
+            model.saveChangesIfNeeded()
+        }
+    }
 }

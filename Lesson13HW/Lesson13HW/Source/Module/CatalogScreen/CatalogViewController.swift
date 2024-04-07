@@ -34,6 +34,11 @@ class CatalogViewController: UIViewController {
         
         contentView.tableView.dataSource = self
         contentView.tableView.delegate = self
+        
+        contentView.tableView.rowHeight = 170
+        
+        // Register custom cell class with the table view
+        contentView.tableView.register(PcTableViewCell.self, forCellReuseIdentifier: PcTableViewCell.identifier)
     }
 }
 
@@ -58,18 +63,26 @@ extension CatalogViewController: UITableViewDataSource {
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        
-        guard let cell = tableView.dequeueReusableCell(withIdentifier: "CatalogCell")
+        guard let cell = tableView.dequeueReusableCell(withIdentifier: PcTableViewCell.identifier, for: indexPath) as? PcTableViewCell
         else {
             assertionFailure()
             return UITableViewCell()
         }
         
         let item = model.pcItems[indexPath.row]
-        cell.textLabel?.text = item.name
-        cell.detailTextLabel?.text = item.model
+        cell.productCodeLabel.text = "Product code: \(item.id)"
+        cell.nameLabel.text = item.name
+        cell.manufacturerModelLabel.text = "\(item.manufacturer), \(item.model)"
+        cell.ratingView.setRating(item.rating)
+        cell.priceCurrencyLabel.text = "\(item.price), \(item.currency)"
         
-        cell.accessoryType = (item.isFavorite ?? false) ? .checkmark : .none
+        // Configure the closure to handle favorite button tap
+        cell.favoriteButtonTapped = { [weak self] isFavorite in
+            self?.model.updateItem(with: isFavorite, at: indexPath.row)
+        }
+        
+        // Set the state of the favorite button
+        cell.favoriteButton.isSelected = item.isFavorite ?? false
         
         return cell
     }
@@ -78,12 +91,4 @@ extension CatalogViewController: UITableViewDataSource {
 // MARK: - UITableViewDelegate
 extension CatalogViewController: UITableViewDelegate {
     
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        
-        let isFavorite = !model.pcItems[indexPath.row].favorite()
-        model.updateItem(with: isFavorite, at: indexPath.row)
-        
-        let cell = tableView.cellForRow(at: indexPath)
-        cell?.accessoryType = isFavorite ? .checkmark : .none
-    }
 }
